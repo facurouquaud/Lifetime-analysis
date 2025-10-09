@@ -220,24 +220,6 @@ def graficar_vuelta(x,y,imagen):
     plt.tight_layout()
     plt.show()
     
-# for i in range(2):
-#     imagen = np.flip(imagen, axis=1)     
-
-# fig, ax = plt.subplots(figsize=(6, 6))
-# im = ax.imshow(imagen, cmap='inferno',
-#                extent=[x.min(), x.max(), y.min(), y.max()],
-#                origin='lower')   # origin='lower' para que y vaya de abajo hacia arriba
-
-# ax.set_title("Reconstrucción (vuelta) — 10 µm × 10 µm", fontsize=12, fontweight='bold')
-# ax.set_xlabel("x [µm]")
-# ax.set_ylabel("y [µm]")
-# fig.colorbar(im, ax=ax, label="Número de fotones")
-# ax.set_aspect('equal', adjustable='box')
-# plt.tight_layout()
-# plt.show()
-for i in range(2):
-    graficar_ida(x,y,imagen_ida[i])
-    graficar_vuelta(x,y,imagen_vuelta[i])
 
 
 #%%
