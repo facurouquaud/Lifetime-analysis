@@ -8,33 +8,14 @@ imágenes.
 import read_PTU_pixels_2 as rd
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage.measure import profile_line
 import tifffile as tiff
 
 
 
+path = "C:\\Users\\Lenovo\Downloads\\"
 
 
-# ----- Separamos en ida y vuelta -----
-
-def separar_ida_vuelta(pixeles_ida,pixeles_vuelta, shape,n_pix_objetivo):
-    cuentas_ida = np.array([len(x) for x in pixeles_ida])  
-    cuentas_vuelta = np.array([len(x) for x in pixeles_vuelta])  
-    # recortar o rellenar como antes
-    if len(cuentas_ida) < n_pix_objetivo:
-        cuentas_ida = np.pad(cuentas_ida, (0, n_pix_objetivo - len(cuentas_ida)), mode='constant', constant_values=0)
-    elif len(cuentas_ida) > n_pix_objetivo:
-        cuentas_ida = cuentas_ida[:n_pix_objetivo]
-    if len(cuentas_vuelta) < n_pix_objetivo:
-         cuentas_vuelta = np.pad(cuentas_vuelta, (0, n_pix_objetivo - len(cuentas_vuelta)), mode='constant', constant_values=0)
-    elif len(cuentas_vuelta) > n_pix_objetivo:
-        cuentas_vuelta = cuentas_vuelta[:n_pix_objetivo]
-    imagen_ida = cuentas_ida.reshape(shape)
-    imagen_vuelta = cuentas_vuelta.reshape(shape)
-    return imagen_ida, imagen_vuelta
-
-   
-    
+# ----- Funciones para graficar ida y vuelta -----
 
 def graficar_ida(x,y,imagen):
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -66,8 +47,28 @@ def graficar_vuelta(x,y,imagen):
     plt.tight_layout()
     plt.show()
 
+# ----- Separa en ida y vuelta, cortando pixeles de mas del final -----
+
+def separar_ida_vuelta(pixeles_ida,pixeles_vuelta, shape,n_pix_objetivo):
+    cuentas_ida = np.array([len(x) for x in pixeles_ida])  
+    cuentas_vuelta = np.array([len(x) for x in pixeles_vuelta])  
+    # recortar o rellenar como antes
+    if len(cuentas_ida) < n_pix_objetivo:
+        cuentas_ida = np.pad(cuentas_ida, (0, n_pix_objetivo - len(cuentas_ida)), mode='constant', constant_values=0)
+    elif len(cuentas_ida) > n_pix_objetivo:
+        cuentas_ida = cuentas_ida[:n_pix_objetivo]
+    if len(cuentas_vuelta) < n_pix_objetivo:
+         cuentas_vuelta = np.pad(cuentas_vuelta, (0, n_pix_objetivo - len(cuentas_vuelta)), mode='constant', constant_values=0)
+    elif len(cuentas_vuelta) > n_pix_objetivo:
+        cuentas_vuelta = cuentas_vuelta[:n_pix_objetivo]
+    imagen_ida = cuentas_ida.reshape(shape)
+    imagen_vuelta = cuentas_vuelta.reshape(shape)
+    return imagen_ida, imagen_vuelta
+
+
+
 def imagen_ida_vuelta(file, n_pix, tamano_um,pixeles_ida_centro ):
-    archivo = "C:\\Users\\Luis1\\Downloads\\" + file + ".ptu"
+    archivo = path + file + ".ptu"
     shape = (n_pix,n_pix)
     n_pix_objetivo = shape[0]*shape[1]
     x = np.linspace(0, tamano_um, shape[1])  # horizontal (cols)
@@ -80,22 +81,25 @@ def imagen_ida_vuelta(file, n_pix, tamano_um,pixeles_ida_centro ):
         imagen_ida, _ = separar_ida_vuelta(pixeles_ida,pixeles_vuelta,shape,n_pix_objetivo)
         _, imagen_vuelta = separar_ida_vuelta(pixeles_ida,pixeles_vuelta,shape,n_pix_objetivo)
         return x, y, imagen_ida, imagen_vuelta  
+
 def guardar_imagen_tiff(file, imagen_ida, imagen_vuelta):
-    tiff.imwrite("C:\\Users\\Luis1\\Downloads\\" + file + "_ida.tif", imagen_ida.astype(np.float32))
-    tiff.imwrite("C:\\Users\\Luis1\\Downloads\\" + file + "_vuelta.tif", np.flip(imagen_vuelta, axis = 1).astype(np.float32))
-#%%
-# ----- Cargamos los archivos y los leemos (están en formato PTU) -----
-# 
-# archivo = "C:\\Users\\Luis1\\Downloads\\10x10um-200px-001ms.ptu"
-#50x50umm-500px-001ms
-file = "Fotobeadsarribaizq"
-  
-x,y,imagen_ida, imagen_vuelta = imagen_ida_vuelta(file, 500, 10, 16)
-graficar_ida(x,y,imagen_ida)
-graficar_vuelta(x,y,imagen_vuelta)
-guardar_imagen_tiff(file, imagen_ida, imagen_vuelta)
+    tiff.imwrite( path + file + "_ida.tif", imagen_ida.astype(np.float32))
+    tiff.imwrite( path + file + "_vuelta.tif", np.flip(imagen_vuelta, axis = 1).astype(np.float32))
 
 
 
 
-#%%
+if __name__ == "__main__":
+    file = "5x5um-100px-005ms"
+    number_of_pixels = 100
+    image_size_um = 5
+    pixeles_ida_al_cero = 22
+      
+    x, y, imagen_ida, imagen_vuelta = imagen_ida_vuelta(file, number_of_pixels,
+    image_size_um, pixeles_ida_al_cero)
+    graficar_ida(x,y,imagen_ida)
+    graficar_vuelta(x,y,imagen_vuelta)
+    # guardar_imagen_tiff(file, imagen_ida, imagen_vuelta)
+
+
+
