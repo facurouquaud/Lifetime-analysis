@@ -80,9 +80,9 @@ def readPT3_fast_pixels(inputfile, numRecords):
 
     dtime_array = np.zeros(numRecords)
     truensync_array = np.zeros(numRecords)
+
     pixeles = []
-    pixel_actual = []
-    marker_events = []
+    pixel_actual = {1: [], 2: []}
 
     for recNum in range(numRecords):
         try:
@@ -95,25 +95,38 @@ def readPT3_fast_pixels(inputfile, numRecords):
         dtime = (recordData >> 16) & 0xFFF
         nsync = recordData & 0xFFFF
 
+        # --------- OVERFLOW y MARKERS ---------
         if channel == 15:
             if dtime == 0:
                 oflcorrection += T3WRAPAROUND
+
             elif dtime == 2:
-                # Marker 1: nuevo píxel
-                pixeles.append(np.array(pixel_actual))  # se guarda aunque esté vacío
-                pixel_actual = []
-        elif 0 <= channel <= 4:
+                # Marker 1 → nuevo píxel
+                pixeles.append({
+                    1: np.array(pixel_actual[1]),
+                    2: np.array(pixel_actual[2])
+                })
+                pixel_actual = {1: [], 2: []}
+
+        # --------- FOTONES ---------
+        elif channel in (1, 2):
             truensync = oflcorrection + nsync
             dtime_array[dlen] = dtime
             truensync_array[dlen] = truensync
             dlen += 1
-            pixel_actual.append((dtime, truensync))
-        else:
-            print(f'Canal ilegal #{channel} en registro {recNum}')
 
-    # Guarda último píxel si tiene datos 
-    if pixel_actual:
-        pixeles.append(np.array(pixel_actual))
+            pixel_actual[channel].append((dtime, truensync))
+
+        # --------- OTROS CANALES ---------
+        else:
+            pass  # ignoramos
+
+    # Guardar último píxel
+    if pixel_actual[1] or pixel_actual[2]:
+        pixeles.append({
+            1: np.array(pixel_actual[1]),
+            2: np.array(pixel_actual[2])
+        })
 
     return dtime_array[:dlen], truensync_array[:dlen], pixeles
 
@@ -137,3 +150,9 @@ def filtrar_pixels(pixels, n_pix, n_pix_acc, N):
     pixeles_vuelta = [px for i, px in enumerate(pixels) if mascara_vuelta[i]]
 
     return pixeles_validos, pixeles_ida, pixeles_vuelta
+if __name__ == "__main__":
+    archivo = "C:\\Users\\Luis1\\Downloads\\Lifetime\\10x10um-200px-001ms.ptu"
+    with open(archivo, 'rb') as fd:
+        numRecords, glob, timer = readHeaders(fd)
+        dtime, truesync, pixeles = readPT3_fast_pixels(fd, numRecords)
+    

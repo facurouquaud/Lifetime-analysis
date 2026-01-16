@@ -8,6 +8,7 @@ Created on Mon Dec 29 14:04:15 2025
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+from scipy.signal import fftconvolve
 import read_PTU_pixels_2 as rd
 plt.style.use(r"C:\Users\Luis1\Downloads\gula_style.mplstyle")
 plt.rcParams["text.usetex"] = False
@@ -115,4 +116,34 @@ plt.ylabel("Counts")
 plt.legend()
 plt.grid()
 plt.show()
+#%% Veamos como tratar la irf
 
+tau_true = 3.0        # ns
+t0 = 9              # ns (posición del pulso)
+sigma_irf = 0.25      # ns (ancho IRF)
+Nfot = 50_000
+dt = 0.02             # ns
+t = np.arange(0, 30, dt)
+
+def irf(t, t0, sigma):
+    return np.exp(-(t - t0)**2 / (2 * sigma**2))
+IRF = irf(t, t0, sigma_irf)
+IRF /= IRF.sum()   # normalización
+decay = np.zeros_like(t)
+mask = t >= t0
+decay[mask] = np.exp(-(t[mask] - t0) / tau_true)
+decay /= decay.sum()
+signal = fftconvolve(decay, IRF, mode="same")
+signal /= signal.sum()
+cdf = np.cumsum(signal)
+cdf /= cdf[-1]
+
+rnd = np.random.rand(Nfot)
+t_events = np.interp(rnd, cdf, t)
+plt.plot(t, signal, label="Señal medida (IRF * exp)")
+plt.plot(t, IRF / IRF.max() * signal.max(), '--', label="IRF (esc.)")
+plt.xlabel("t / ns")
+plt.ylabel("Prob.")
+plt.legend()
+plt.grid()
+plt.show()
