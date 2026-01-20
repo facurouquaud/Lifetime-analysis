@@ -81,13 +81,13 @@ def imagen_ida_vuelta(file, n_pix, tamano_um,pixeles_ida_centro ):
         # Filtramos los píxeles (ignoramos bordes)
         _, pixeles_ida, pixeles_vuelta = rd.filtrar_pixels(pixeles[pixeles_ida_centro:len(pixeles)], n_pix, 4, 1)
         imagen_ida, imagen_vuelta = separar_ida_vuelta(
-           pixeles_ida, pixeles_vuelta, shape, n_pix_objetivo, canal=2)
+           pixeles_ida, pixeles_vuelta, shape, n_pix_objetivo, canal=1)
         return x, y, imagen_ida, imagen_vuelta  
 
 # ----- Guardamos .tiff para ImageJ -----
 def guardar_imagen_tiff(file, imagen_ida, imagen_vuelta):
     tiff.imwrite( path + file + "_ida.tif", imagen_ida.astype(np.float32))
-    tiff.imwrite( path + file + "_vuelta.tif", np.flip(imagen_vuelta, axis = 1).astype(np.float32))
+    tiff.imwrite( path + file + "_vuelta.tif", np.flip(imagen_vuelta, axis = 2).astype(np.float32))
     
 
 # # -----Análisis del perfil de intensidad para ver separación entre ida y vuelta -----
@@ -137,14 +137,15 @@ import struct
 
 
 if __name__ == "__main__":
-    file = "yellow_red"
+    path = "C:\\Users\\Luis1\\Downloads\\Mediciones_intercalados\\10x10-200px-30us\\"
+    file = "ARLR"
     archivo = path + file + ".ptu"
 
     number_of_pixels = 200
     px_size  = 10/200
     image_size_um = 10
-    pixeles_ida_al_cero = 10
-    dwell_time = 20
+    pixeles_ida_al_cero = 7
+    dwell_time = 60
     x, y, imagen_ida, imagen_vuelta = imagen_ida_vuelta(file, number_of_pixels,
     image_size_um, pixeles_ida_al_cero)
     graficar_ida(x,y,imagen_ida)

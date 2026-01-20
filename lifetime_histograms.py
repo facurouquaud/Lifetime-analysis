@@ -13,24 +13,33 @@ import read_PTU_pixels_2 as rd
 plt.style.use(r"C:\Users\Luis1\Downloads\gula_style.mplstyle")
 plt.rcParams["text.usetex"] = False
 plt.rcParams["font.family"] = "serif"
-def filtrar_pixeles(pixeles, lower_limit, upper_limit):
+
+def filtrar_pixeles(pixeles, apd, lower_limit, upper_limit):
     pixeles_filtrados = []
 
     for p in pixeles:
-        n = len(p)
+        if apd not in p:
+            continue
+
+        n = p[apd].shape[0]   # nº de fotones en ese APD
+
         if lower_limit <= n < upper_limit:
-            if n > 0:
-                pixeles_filtrados.append(np.asarray(p))
+            pixeles_filtrados.append(p)
 
     return pixeles_filtrados
 
-def filtro_pixeles_global(pixeles, lower_limit, upper_limit):
+
+def fotones_globales(pixeles, apd, lower_limit, upper_limit):
     fotones = []
 
     for p in pixeles:
-        if lower_limit <= len(p) < upper_limit:
-            if len(p) > 0:
-                fotones.append(np.asarray(p))
+        if apd not in p:
+            continue
+
+        n = p[apd].shape[0]
+
+        if lower_limit <= n < upper_limit:
+            fotones.append(p[apd])
 
     if len(fotones) == 0:
         return np.empty((0, 2))
@@ -39,8 +48,7 @@ def filtro_pixeles_global(pixeles, lower_limit, upper_limit):
 
 
 #%%
-archivo = "C:\\Users\\Luis1\\Downloads\\Lifetime\\5x5um-50px-005ms.ptu"
-archivo_2 = "C:\\Users\\Luis1\\Downloads\\Lifetime\\10x10um-200px-001ms.ptu"
+archivo = "C:\\Users\\Luis1\\Downloads\\Mediciones_intercalados\\5x5-100px-60us\\AALRLA.ptu"
 
 with open(archivo, 'rb') as fd:
     numRecords, globRes, timeRes = rd.readHeaders(fd)
@@ -48,40 +56,73 @@ with open(archivo, 'rb') as fd:
 
 pixeles_validos = filtrar_pixeles(
     pixeles,
-    lower_limit=15,
-    upper_limit=100
+    apd=2,              # APD 1
+    lower_limit=5,
+    upper_limit=1000
 )
-datos = pixeles_validos[40]
-plt.figure(constrained_layout=True)
 
-plt.hist(datos[:, 0]* timeRes * 1e9, bins=14)
+i = 60  # píxel válido
+datos = pixeles_validos[i][1]   # APD 1
+
+plt.hist(datos[:, 0] * timeRes * 1e9, bins=14)
 plt.xlabel("t / ns")
 plt.ylabel("Counts")
+plt.title(f"Píxel {i} – APD 1")
 plt.grid()
+plt.show()
+#%%APD1
+t1 = pixeles[5][1][:, 0] * timeRes * 1e9  # ns
+plt.hist(t1, bins=6)
+plt.title(f"Píxel {60} – APD 1")
+plt.xlabel("t / ns")
+plt.ylabel("Counts")
 plt.show()
 
 
 
 #%% Grafico global
-datos_global = filtro_pixeles_global(pixeles, lower_limit=6, upper_limit=1000)
-t_ns = datos_global[:, 0] * timeRes * 1e9
+colors = ["r", "y"]
+label = ["APD1(R)", "APD2(A)"]
+for i in range(1,3,1):
+    datos_globales = fotones_globales(
+        pixeles,
+        apd=i,
+        lower_limit=1,
+        upper_limit=100
+    )
+    plt.hist(datos_globales[:, 0] * timeRes * 1e9, bins=200,density = True, color = colors [i-1], label = label[i-1])
+    plt.xlabel("t / ns")
+    plt.ylabel("Counts")
+    plt.title(f"Lifetime global intecalados")
+    plt.legend()
+    plt.grid(True)
+    
+#%%Construido a mano
+from scipy.signal import find_peaks
 
-mask = (t_ns >= 9) & (t_ns <= 25)
+counts, bin_edges = np.histogram(
+    datos_globales[:, 0] * timeRes * 1e9,
+    bins=200,
+    density=True
+)
 
-datos_global_25ns = datos_global[mask]
-plt.figure(constrained_layout=True)
+bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+peaks, properties = find_peaks(
+    counts,
+    height=0.05,      # umbral mínimo (ajustar)
+    distance=5        # separación mínima entre picos (bins)
+)
+plt.plot(bin_centers, counts, color=colors[i-1], label=label[i-1])
+plt.plot(bin_centers[peaks], counts[peaks], "x", color="black", ms=8)
 
-plt.hist(datos_global_25ns[:, 0]* timeRes * 1e9, bins=20)
 plt.xlabel("t / ns")
 plt.ylabel("Counts")
-
-plt.grid()
-plt.show()
-
-
+plt.legend()
+plt.grid(True)
+print(f"Tiempo entre eventos amarillos {bin_centers[peaks[1]] - bin_centers[peaks[0]]}")
 #%% Ajustes 
 # tiempos en ns
-t_ns = datos_global_25ns[:, 0] * timeRes * 1e9
+t_ns = datos_globales[:, 0] * timeRes * 1e9
 
 bins = 40
 hist, edges = np.histogram(t_ns, bins=bins)
