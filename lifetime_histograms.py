@@ -47,57 +47,73 @@ def fotones_globales(pixeles, apd, lower_limit, upper_limit):
     return np.vstack(fotones)
 
 
-#%%
-archivo = "C:\\Users\\Luis1\\Downloads\\Mediciones_intercalados\\5x5-100px-60us\\AALRLA.ptu"
-
-with open(archivo, 'rb') as fd:
-    numRecords, globRes, timeRes = rd.readHeaders(fd)
-    dtime_array, truensync_array, pixeles = rd.readPT3_fast_pixels(fd, numRecords)
+#%% Cargo todos los pixeles de las mediciones
+mediciones = ["10x10-200px-30us","5x5-100px-60us","2x2-50px-400us" ]
+datos = []
+for i in range(len(mediciones)): 
+ archivo = f"C:\\Users\\Luis1\\Downloads\\Mediciones_intercalados\\{mediciones[i]}\\ARLRLA.ptu"
+ with open(archivo, 'rb') as fd:
+        numRecords, globRes, timeRes = rd.readHeaders(fd)
+        dtime_array, truensync_array, pixeles = rd.readPT3_fast_pixels(fd, numRecords)
+        datos.append(pixeles)
 
 pixeles_validos = filtrar_pixeles(
     pixeles,
-    apd=2,              # APD 1
+    apd=1,              # APD 1
     lower_limit=5,
     upper_limit=1000
 )
 
-i = 60  # píxel válido
-datos = pixeles_validos[i][1]   # APD 1
 
-plt.hist(datos[:, 0] * timeRes * 1e9, bins=14)
-plt.xlabel("t / ns")
-plt.ylabel("Counts")
-plt.title(f"Píxel {i} – APD 1")
-plt.grid()
-plt.show()
-#%%APD1
-t1 = pixeles[5][1][:, 0] * timeRes * 1e9  # ns
-plt.hist(t1, bins=6)
-plt.title(f"Píxel {60} – APD 1")
-plt.xlabel("t / ns")
-plt.ylabel("Counts")
-plt.show()
-
-
-
-#%% Grafico global
+#%% Grafico lifetime global
 colors = ["r", "y"]
-label = ["APD1(R)", "APD2(A)"]
-for i in range(1,3,1):
-    datos_globales = fotones_globales(
-        pixeles,
-        apd=i,
-        lower_limit=1,
-        upper_limit=100
-    )
-    plt.hist(datos_globales[:, 0] * timeRes * 1e9, bins=200,density = True, color = colors [i-1], label = label[i-1])
-    plt.xlabel("t / ns")
-    plt.ylabel("Counts")
-    plt.title(f"Lifetime global intecalados")
+labels = ["APD1 (R)", "APD2 (A)"]
+regions = ["10x10 $\mu m$", "5x5 $\mu m$", "2x2 $\mu m$"]
+
+for j in range(3):
+
+    plt.figure(figsize=(6,4))
+
+    for i in range(1, 3):  # APD 1 y 2
+
+        datos_globales = fotones_globales(
+            datos[j],          
+            apd=i,
+            lower_limit=1,
+            upper_limit=200
+        )
+
+        t_ns = datos_globales[:, 0] * timeRes * 1e9
+
+        plt.hist(
+            t_ns,
+            bins=200,
+            density=True,
+            color=colors[i-1],
+            label=labels[i-1]
+        )
+
+    plt.xlabel("Tiempo [ns]")
+    plt.ylabel("Densidad de probabilidad")
     plt.legend()
     plt.grid(True)
+
+    plt.text(
+        0.872, 0.87,
+        regions[j],
+        transform=plt.gca().transAxes,
+        va='top', ha='left',
+        fontsize=20,
+        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8)
+    )
+
+    plt.tight_layout()
+    plt.show()
+
+
+
     
-#%%Construido a mano
+#%% Histograma construido a mano (para calcular diferencia de tiempos)
 from scipy.signal import find_peaks
 
 counts, bin_edges = np.histogram(
@@ -120,7 +136,9 @@ plt.ylabel("Counts")
 plt.legend()
 plt.grid(True)
 print(f"Tiempo entre eventos amarillos {bin_centers[peaks[1]] - bin_centers[peaks[0]]}")
-#%% Ajustes 
+
+
+#%% Ajustes (ver bien lo de la IRF) 
 # tiempos en ns
 t_ns = datos_globales[:, 0] * timeRes * 1e9
 

@@ -72,6 +72,7 @@ def read_phu(file, time_res=32e-12):
             cur = f.tell()
             f.seek(0, 2)
             file_size = f.tell()
+            
             f.seek(cur)
 
         n_bins = (file_size - data_start) // 4
