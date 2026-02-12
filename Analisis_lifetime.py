@@ -30,7 +30,7 @@ def graficar_ida(x,y,imagen):
                    extent=[x.min(), x.max(), y.min(), y.max()],
                    origin='lower')   # origin='lower' para que y vaya de abajo hacia arriba
 
-    ax.set_title("(ida) ", fontsize=12, fontweight='bold')
+   # ax.set_title("(ida) ", fontsize=12, fontweight='bold')
     ax.set_xlabel("x [µm]")
     ax.set_ylabel("y [µm]")
     fig.colorbar(im, ax=ax, label="Número de fotones")
@@ -42,7 +42,7 @@ def graficar_vuelta(x,y,imagen):
                    extent=[x.min(), x.max(), y.min(), y.max()],
                    origin='lower')   # origin='lower' para que y vaya de abajo hacia arriba
     
-    ax.set_title("(Vuelta) ", fontsize=12, fontweight='bold')
+    #ax.set_title("(Vuelta) ", fontsize=12, fontweight='bold')
 
     ax.set_xlabel("x [µm]")
     ax.set_ylabel("y [µm]")
@@ -81,13 +81,13 @@ def imagen_ida_vuelta(file, n_pix, tamano_um,pixeles_ida_centro ):
         # Filtramos los píxeles (ignoramos bordes)
         _, pixeles_ida, pixeles_vuelta = rd.filtrar_pixels(pixeles[pixeles_ida_centro:len(pixeles)], n_pix, 4, 1)
         imagen_ida, imagen_vuelta = separar_ida_vuelta(
-           pixeles_ida, pixeles_vuelta, shape, n_pix_objetivo, canal=1)
+           pixeles_ida, pixeles_vuelta, shape, n_pix_objetivo, canal=2)
         return x, y, imagen_ida, imagen_vuelta  
 
 # ----- Guardamos .tiff para ImageJ -----
 def guardar_imagen_tiff(file, imagen_ida, imagen_vuelta):
     tiff.imwrite( path + file + "_ida.tif", imagen_ida.astype(np.float32))
-    tiff.imwrite( path + file + "_vuelta.tif", np.flip(imagen_vuelta, axis = 2).astype(np.float32))
+    tiff.imwrite( path + file + "_vuelta.tif", np.flip(imagen_vuelta, axis = 1).astype(np.float32))
     
 
 # # -----Análisis del perfil de intensidad para ver separación entre ida y vuelta -----
@@ -138,7 +138,7 @@ import struct
 
 if __name__ == "__main__":
     path = "C:\\Users\\Luis1\\Downloads\\Mediciones_intercalados\\10x10-200px-30us\\"
-    file = "ARLR"
+    file = "ARLRLA"
     archivo = path + file + ".ptu"
 
     number_of_pixels = 200

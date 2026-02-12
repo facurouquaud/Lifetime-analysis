@@ -9,107 +9,85 @@ import numpy as np
 from pathlib import Path
 import os
 import matplotlib.pyplot as plt
-def read_phu(file, time_res=32e-12):
-    """
-    Lector simple de archivos PHU (PQHISTO).
-    La resolución temporal se fuerza (default: 32 ps).
-    """
+import read_PTU_pixels_2 as rd
+plt.style.use(r"C:\Users\Luis1\Downloads\gula_style.mplstyle")
+plt.rcParams["text.usetex"] = False
+plt.rcParams["font.family"] = "serif"
+import matplotvanda as vd
+archivo_r = "C:\\Users\\Luis1\\Downloads\\pulsos_int_rojo.ptu"
+archivo_a = "C:\\Users\\Luis1\\Downloads\\pulsos_int_am.ptu"
 
-    import struct
-    import numpy as np
-    import os
-    from pathlib import Path
-
-    close_after = False
-    if isinstance(file, (str, Path)):
-        f = open(file, "rb")
-        close_after = True
-        filename = file
-    else:
-        f = file
-        filename = None
-
-    try:
-        # --- Header ---
-        magic = f.read(8).decode(errors="ignore").strip()
-        if not magic.startswith("PQHISTO"):
-            raise ValueError(f"Archivo PHU inválido (magic = {magic})")
-
-        f.read(8)  # versión (no la usamos)
-
-        tags = {}
-        while True:
-            tagIdent = f.read(32).decode(errors="ignore").strip("\x00")
-            tagIdx   = struct.unpack("<i", f.read(4))[0]
-            tagType  = struct.unpack("<i", f.read(4))[0]
-            tagValue = f.read(8)
-
-            if tagType == 0xFFFFFFFF:
-                value = None
-            elif tagType in (0x00000001, 0x00000002):
-                value = struct.unpack("<i", tagValue)[0]
-            elif tagType == 0x00000003:
-                value = struct.unpack("<d", tagValue)[0]
-            elif tagType == 0x00000004:
-                pos = struct.unpack("<q", tagValue)[0]
-                cur = f.tell()
-                f.seek(pos)
-                value = f.read(256).decode(errors="ignore").strip("\x00")
-                f.seek(cur)
-            else:
-                value = tagValue
-
-            tags[(tagIdent, tagIdx)] = value
-            if tagIdent == "Header_End":
-                break
-
-        data_start = f.tell()
-
-        # --- Leer histograma ---
-        if filename:
-            file_size = os.path.getsize(filename)
-        else:
-            cur = f.tell()
-            f.seek(0, 2)
-            file_size = f.tell()
-            
-            f.seek(cur)
-
-        n_bins = (file_size - data_start) // 4
-
-        f.seek(data_start)
-        hist = np.fromfile(f, dtype=np.uint32, count=n_bins)
-
-        return hist, time_res, tags
-
-    finally:
-        if close_after:
-            f.close()
+with open(archivo_r, 'rb') as fd:
+    numRecords, glob, timer = rd.readHeaders(fd)
+    dtime, truesync, pixeles_r = rd.readPT3_fast_pixels(fd, numRecords)
+with open(archivo_a, 'rb') as fd:
+    numRecords, glob, timer = rd.readHeaders(fd)
+    dtime, truesync, pixeles_a = rd.readPT3_fast_pixels(fd, numRecords)    
 
 
-
-#%%
-hist, time_res, tags = read_phu(
-    r"C:\Users\Luis1\Downloads\pulso_rojo_25_50.phu"
+dtime_apd1 = np.concatenate(
+    [pixel_dict[1][:,0] 
+     for pixel_dict in pixeles_r 
+     if pixel_dict[1].size > 0]
+)
+dtime_apd2 = np.concatenate(
+    [pixel_dict[1][:,0] 
+     for pixel_dict in pixeles_a 
+     if pixel_dict[1].size > 0]
 )
 
-t_ns = np.arange(len(hist)) * time_res * 1e9/2
 
-plt.figure(figsize=(6,4))
-plt.plot(t_ns, hist)
-plt.xlabel("Tiempo dentro del período (ns)")
-plt.ylabel("Cuentas")
-plt.title("IRF plegada al período del láser")
-plt.xlim(0, 60)
+fig,ax = plt.subplots()
+ax.hist(dtime_apd1*timer*1E9, bins=850, density = True, color = "darkred", label = "Excitación rojo")
+ax.hist(dtime_apd2*timer*1E9, bins = 850,density = True, color = "darkorange", label = "Excitación amarillo")
+ax.set_xlabel("Tiempo [ns]")
+ax.set_ylabel("Densidad de probabilidad")
+vd.gula_grid(ax)
+plt.tight_layout()
+ax.legend()
 plt.show()
-#%%
 
-n_rep = 3  # repetir 3 períodos
-hist_rep = np.tile(hist, n_rep)
-t_rep = np.arange(len(hist_rep)) * time_res * 1e9
 
-plt.plot(t_rep, hist_rep)
-plt.xlabel("Tiempo (ns)")
-plt.ylabel("Cuentas")
-plt.title("Visualización extendida (como el software)")
+
+#%% Hallamos distancia
+from scipy.signal import find_peaks
+
+# Convertimos a tiempo real
+tiempos_r = dtime_apd1 * timer*1E9
+tiempos_a = dtime_apd2 * timer*1E9
+
+# Histogramas
+bins = 1000
+
+hist_r, edges_r = np.histogram(tiempos_r, bins=bins, density=True)
+hist_a, edges_a = np.histogram(tiempos_a, bins=bins, density=True)
+
+# Centros de bin
+centros_r = 0.5 * (edges_r[:-1] + edges_r[1:])
+centros_a = 0.5 * (edges_a[:-1] + edges_a[1:])
+peaks_r, _ = find_peaks(hist_r, height=np.max(hist_r)*0.3)
+peaks_a, _ = find_peaks(hist_a, height=np.max(hist_a)*0.3)
+# Pico principal = el más alto
+pico_principal_r = centros_r[peaks_r[np.argmax(hist_r[peaks_r])]]
+pico_principal_a = centros_a[peaks_a[np.argmax(hist_a[peaks_a])]]
+
+print(f"Pico rojo: {pico_principal_r:.2f} ns")
+print(f"Pico amarillo: {pico_principal_a:.2f} ns")
+distancia = abs(pico_principal_r - pico_principal_a)
+print(f"Separación entre pulsos: {distancia:.2f} ns")
+fig, ax = plt.subplots()
+
+ax.plot(centros_r, hist_r, color="darkred", label="Excitación rojo")
+ax.plot(centros_a, hist_a, color="darkorange", label="Excitación amarillo")
+
+
+
+ax.set_xlabel("Tiempo [ns]")
+ax.set_ylabel("Densidad de probabilidad")
+vd.gula_grid(ax)
+ax.legend()
+
+plt.tight_layout()
 plt.show()
+
+sep_1 = 24.93 
