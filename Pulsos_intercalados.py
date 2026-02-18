@@ -91,3 +91,5 @@ plt.tight_layout()
 plt.show()
 
 sep_1 = 24.93 
+#%%
+

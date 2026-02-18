@@ -13,13 +13,13 @@ import tifffile as tiff
 import sys
 from PIL import Image
 from scipy.signal import find_peaks
-plt.style.use(r"C:\Users\Luis1\Downloads\gula_style.mplstyle")
-plt.rcParams["text.usetex"] = False
-plt.rcParams["font.family"] = "serif"
+#plt.style.use(r"C:\Users\Luis1\Downloads\gula_style.mplstyle")
+#plt.rcParams["text.usetex"] = False
+#plt.rcParams["font.family"] = "serif"
 
-path = "C:\\Users\\Luis1\\Downloads\\Lifetime\\"
+path = "C:\\Users\\Lenovo\\Downloads\\Lifetime\\5x5-100px-60us\\"
 
-sys.path.append(path)
+#sys.path.append(path)
 import matplotvanda as vd
 
 # ----- Funciones para graficar ida y vuelta -----
@@ -137,7 +137,6 @@ import struct
 
 
 if __name__ == "__main__":
-    path = "C:\\Users\\Luis1\\Downloads\\Mediciones_intercalados\\10x10-200px-30us\\"
     file = "ARLRLA"
     archivo = path + file + ".ptu"
 
@@ -159,6 +158,7 @@ if __name__ == "__main__":
         for _ in range(200000):
             record = struct.unpack('<I', fd.read(4))[0]
             channels.append(record >> 28)
+    
     
     print(set(channels))
 
