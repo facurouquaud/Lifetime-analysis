@@ -70,58 +70,57 @@ pixeles_validos = filtrar_pixeles(
 #%% Grafico lifetime global
 colors = ["r", "y"]
 labels = ["APD1 (R)", "APD2 (A)"]
-regions = ["10x10 $\mu m$", "5x5 $\mu m$", "2x2 $\mu m$"]
+regions = ["10x10 $\mu m$"]
 
-for j in range(3):
 
-    fig,ax = plt.subplots()
+fig,ax = plt.subplots(figsize=(18,4))
 
-    for i in range(1, 3):  # APD 1 y 2
+for i in range(1, 3):  # APD 1 y 2
 
-        datos_globales = fotones_globales(
-            datos[j],          
-            apd=i,
-            lower_limit=1,
-            upper_limit=200
-        )
-
-        t_ns = datos_globales[:, 0] * timeRes * 1e9
-
-        ax.hist(
-            t_ns,
-            bins=200,
-            density=True,
-            color=colors[i-1],
-            label=labels[i-1]
-        )
-
-    ax.set_xlabel("Tiempo [ns]")
-    ax.set_ylabel("Densidad de probabilidad")
-    ax.legend()
-    vd.gula_grid(ax)
-
-    plt.text(
-        0.1, 0.95,
-        regions[j],
-        transform=plt.gca().transAxes,
-        va='top', ha='left',
-        fontsize=14,
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.85)
+    datos_globales = fotones_globales(
+        datos[0],          
+        apd=i,
+        lower_limit=1,
+        upper_limit=200
     )
 
-    plt.tight_layout()
-    plt.show()
+    t_ns = datos_globales[:, 0] * timeRes * 1e9
+
+    ax.hist(
+        t_ns,
+        bins=200,
+        density=True,
+        color=colors[i-1],
+        label=labels[i-1]
+    )
+
+ax.set_xlabel("Tiempo [ns]", fontsize = 14)
+ax.set_ylabel("Densidad de probabilidad", fontsize = 14)
+ax.legend()
+vd.gula_grid(ax)
+
+# plt.text(
+#     0.1, 0.95,
+#     regions[0],
+#     transform=plt.gca().transAxes,
+#     va='top', ha='left',
+#     fontsize=14,
+#     bbox=dict(boxstyle="round", facecolor="white", alpha=0.85)
+# )
+
+plt.tight_layout()
+plt.show()
 
 
 
 #%% Reconstrucción imágenes por lifetime pixel apixel
-archivo = "C:\\Users\\Lenovo\\Downloads\\Lifetime\\5x5-100px-60us\\AALRLA.ptu"
+archivo = "C:\\Users\\Lenovo\\Downloads\\Lifetime\\10x10-200px-30us\\AALRLA.ptu"
 with open(archivo, 'rb') as fd:
        numRecords, globRes, timeRes = rd.readHeaders(fd)
        dtime_array, truensync_array, pixeles = rd.readPT3_fast_pixels(fd, numRecords)
        datos.append(pixeles)
-pixeles, ida, vuelta = rd.filtrar_pixels(pixeles,100,4,1)
-ida = ida[0:len(ida) - 91]
+pixeles, ida, vuelta = rd.filtrar_pixels(pixeles,200,4,1)
+ida = ida[0:len(ida) - 160]
 
 #%%
 def reconstruir_imagen_ventanas(pixeles, apd, timeRes, ventanas):
@@ -156,12 +155,11 @@ def reconstruir_imagen_ventanas(pixeles, apd, timeRes, ventanas):
 ventanas = [(0,25), (25,50), (50,75), (75,100)]
 imgs = reconstruir_imagen_ventanas(
     vuelta,
-    apd=2,
+    apd=1,
     timeRes=timeRes,
     ventanas=ventanas
 )
 
-plt.figure(figsize=(10,8))
 
 # tamaño físico
 L = 10  # micrómetros
@@ -171,28 +169,29 @@ pixel_size = L / n_pix
 extent = [0, L, 0, L]  # eje en micrómetros
 
 vmax = max([img.max() for img in imgs])
+fig, axes = plt.subplots(1, 4, figsize=(18,4))
 
 for i, w in enumerate(ventanas):
     
-    ax = plt.subplot(2,2,i+1)
-    
-    im = ax.imshow(np.flip(imgs[i], axis=0),
-                   cmap='inferno',
-                   vmin=0,
-                   vmax=vmax,
-                   extent=extent,
-                   origin='lower')
+    im = axes[i].imshow(np.flip(imgs[i], axis=1),
+                        cmap='inferno',
+                        vmin=0,
+                        vmax=vmax,
+                        extent=extent,
+                        origin='lower')
 
-    ax.set_title(f"{w[0]}–{w[1]} ns")
+    axes[i].set_title(f"{w[0]}–{w[1]} ns")
     
-    ax.set_xlabel("x (µm)")
-    ax.set_ylabel("y (µm)")
+    axes[i].set_xlabel("x (µm)")
+    axes[i].set_ylabel("y (µm)")
     
-    # ticks cada 2 µm
-    ax.set_xticks(np.arange(0, L+1, 2))
-    ax.set_yticks(np.arange(0, L+1, 2))
+    axes[i].set_xticks(np.arange(0, L+1, 2))
+    axes[i].set_yticks(np.arange(0, L+1, 2))
 
-    plt.colorbar(im, ax=ax)
+# Colorbar única
+#cbar = fig.colorbar(im, ax=axes, fraction=0.02, pad=0.04)
+#cbar.set_label("Fotones")
 
 plt.tight_layout()
 plt.show()
+

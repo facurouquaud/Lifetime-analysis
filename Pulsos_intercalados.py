@@ -10,7 +10,7 @@ from pathlib import Path
 import os
 import matplotlib.pyplot as plt
 import read_PTU_pixels_2 as rd
-plt.style.use(r"C:\Users\Luis1\Downloads\gula_style.mplstyle")
+#plt.style.use(r"C:\Users\Luis1\Downloads\gula_style.mplstyle")
 plt.rcParams["text.usetex"] = False
 plt.rcParams["font.family"] = "serif"
 import matplotvanda as vd
@@ -40,8 +40,8 @@ dtime_apd2 = np.concatenate(
 fig,ax = plt.subplots()
 ax.hist(dtime_apd1*timer*1E9, bins=850, density = True, color = "darkred", label = "Excitación rojo")
 ax.hist(dtime_apd2*timer*1E9, bins = 850,density = True, color = "darkorange", label = "Excitación amarillo")
-ax.set_xlabel("Tiempo [ns]")
-ax.set_ylabel("Densidad de probabilidad")
+ax.set_xlabel("Tiempo [ns]", fontsize = 14)
+ax.set_ylabel("Densidad de probabilidad", fontsize = 14)
 vd.gula_grid(ax)
 plt.tight_layout()
 ax.legend()
