@@ -11,7 +11,6 @@ from scipy.optimize import curve_fit
 from scipy.signal import fftconvolve
 import read_PTU_pixels_2 as rd
 import Analisis_lifetime as lf
-plt.style.use(r"C:\Users\Lenovo\Downloads\Lifetime\gula_style.mplstyle")
 plt.rcParams["text.usetex"] = False
 plt.rcParams["font.family"] = "serif"
 import matplotvanda as vd
@@ -53,7 +52,7 @@ def fotones_globales(pixeles, apd, lower_limit, upper_limit):
 mediciones = ["10x10-200px-30us","5x5-100px-60us","2x2-50px-400us" ]
 datos = []
 for i in range(len(mediciones)): 
- archivo = f"C:\\Users\\Lenovo\\Downloads\\Lifetime\\{mediciones[i]}\\AALRLA.ptu"
+ archivo = f"C:\\Users\\Luis1\\Downloads\\Mediciones_intercalados\\{mediciones[i]}\\AALALR.ptu"
  with open(archivo, 'rb') as fd:
         numRecords, globRes, timeRes = rd.readHeaders(fd)
         dtime_array, truensync_array, pixeles = rd.readPT3_fast_pixels(fd, numRecords)
@@ -195,3 +194,138 @@ for i, w in enumerate(ventanas):
 plt.tight_layout()
 plt.show()
 
+#%% Ajuste lifetime 
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+#APD rojo
+
+def exp_decay(t, A, tau, C):
+    return A * np.exp(-t/tau) + C
+
+
+apd = 1  
+
+datos_globales = fotones_globales(
+    datos[0],
+    apd=apd,
+    lower_limit=20,
+    upper_limit=200
+)
+
+t_ns = datos_globales[:, 0] * timeRes * 1e9
+
+
+mask = (t_ns >= 25) & (t_ns < 52)
+t_sel = t_ns[mask]
+
+t_sel = t_sel - 31
+
+
+bins = 100
+counts, edges = np.histogram(t_sel, bins=bins, range=(0,23))
+bin_centers = (edges[:-1] + edges[1:]) / 2
+
+# evitar bins vacíos al ajustar
+mask_fit = counts > 0
+t_fit = bin_centers[mask_fit]
+counts_fit = counts[mask_fit]
+
+
+# -------- ajuste ----------
+p0 = [counts_fit.max(), 5, 80]  # condiciones iniciales
+
+popt, pcov = curve_fit(
+    exp_decay,
+    t_fit,
+    counts_fit,
+    p0=p0
+)
+
+A_fit, tau_fit, C_fit = popt
+tau_err = np.sqrt(np.diag(pcov))[1]
+
+
+# -------- gráfico ----------
+plt.figure(figsize=(7,5))
+
+plt.plot(t_fit, counts_fit, 'o', label='Datos', color = "indianred")
+
+t_model = np.linspace(0,22,400)
+plt.plot(t_model,
+         exp_decay(t_model, *popt),
+         '-',
+         label=f'Ajuste: τ = {tau_fit:.2f} ± {tau_err:.2f} ns', color = "slategray")
+
+plt.xlabel("Tiempo [ns]", fontsize = 16)
+plt.ylabel("Cuentas", fontsize = 16)
+plt.grid()
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+print(f"Tiempo de vida: {tau_fit:.3f} ± {tau_err:.3f} ns")
+
+#%%
+#APD amarillo
+
+
+apd = 2  
+
+datos_globales = fotones_globales(
+    datos[0],
+    apd=apd,
+    lower_limit=1,
+    upper_limit=200
+)
+t_ns = datos_globales[:, 0] * timeRes * 1e9
+
+t_sel = t_ns - 4.5
+
+bins = 100
+counts, edges = np.histogram(t_sel, bins=bins, range=(0,24))
+bin_centers = (edges[:-1] + edges[1:]) / 2
+
+# evitar bins vacíos al ajustar
+mask_fit = counts > 0
+t_fit = bin_centers[mask_fit]
+counts_fit = counts[mask_fit]
+
+
+# -------- ajuste ----------
+p0 = [counts_fit.max(), 5, 1]  # condiciones iniciales
+
+popt, pcov = curve_fit(
+    exp_decay,
+    t_fit,
+    counts_fit,
+    p0=p0
+)
+
+A_fit, tau_fit, C_fit = popt
+tau_err = np.sqrt(np.diag(pcov))[1]
+
+
+# -------- gráfico ----------
+plt.figure(figsize=(7,5))
+
+plt.plot(t_fit, counts_fit, 'o', label='Datos', color = "y")
+
+t_model = np.linspace(0,22,400)
+plt.plot(t_model,
+         exp_decay(t_model, *popt),
+         '-',
+         label=f'Ajuste: τ = {tau_fit:.2f} ± {tau_err:.2f} ns', color = "slategray")
+
+plt.xlabel("Tiempo [ns]", fontsize = "16")
+plt.ylabel("Cuentas", fontsize = "16")
+plt.grid()
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+print(f"Tiempo de vida: {tau_fit:.3f} ± {tau_err:.3f} ns")
