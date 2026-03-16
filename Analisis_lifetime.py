@@ -9,18 +9,16 @@ import pandas as pd
 import read_PTU_pixels_2 as rd
 import matplotlib.pyplot as plt
 import numpy as np
-import tifffile as tiff
 import sys
 from PIL import Image
 from scipy.signal import find_peaks
 #plt.style.use(r"C:\Users\Luis1\Downloads\gula_style.mplstyle")
-#plt.rcParams["text.usetex"] = False
-#plt.rcParams["font.family"] = "serif"
+plt.rcParams["text.usetex"] = False
+plt.rcParams["font.family"] = "serif"
 
-path = "C:\\Users\\Lenovo\\Downloads\\Lifetime\\5x5-100px-60us\\"
+path = "C:\\Users\\Lenovo\\Downloads\\Lifetime\\10x10-200px-30us\\"
 
 #sys.path.append(path)
-import matplotvanda as vd
 
 # ----- Funciones para graficar ida y vuelta -----
 
@@ -31,10 +29,18 @@ def graficar_ida(x,y,imagen):
                    origin='lower')   # origin='lower' para que y vaya de abajo hacia arriba
 
    # ax.set_title("(ida) ", fontsize=12, fontweight='bold')
-    ax.set_xlabel("x [µm]")
-    ax.set_ylabel("y [µm]")
-    fig.colorbar(im, ax=ax, label="Número de fotones")
-    ax.set_aspect('equal', adjustable='box')    
+    ax.set_xlabel("x [µm]", fontsize = 20)
+    ax.set_ylabel("y [µm]", fontsize = 20)
+    ax.tick_params(axis='both', which='major', labelsize=14)
+ 
+ 
+    # colorbar corregido
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label("Número de fotones", fontsize=18)
+    cbar.ax.tick_params(labelsize=14)
+ 
+    ax.set_aspect('equal', adjustable='box')
+    plt.show()   
 def graficar_vuelta(x,y,imagen):
     imagen = np.flip(imagen, axis=1)
     fig, ax = plt.subplots(constrained_layout=True)
@@ -44,11 +50,18 @@ def graficar_vuelta(x,y,imagen):
     
     #ax.set_title("(Vuelta) ", fontsize=12, fontweight='bold')
 
-    ax.set_xlabel("x [µm]")
-    ax.set_ylabel("y [µm]")
-    fig.colorbar(im, ax=ax, label="Número de fotones")
+    ax.set_xlabel("x [µm]", fontsize = 20)
+    ax.set_ylabel("y [µm]", fontsize = 20)
+    ax.tick_params(axis='both', which='major', labelsize=14)
+ 
+ 
+    # colorbar corregido
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label("Número de fotones", fontsize=18)
+    cbar.ax.tick_params(labelsize=14)
+ 
     ax.set_aspect('equal', adjustable='box')
-    plt.show()
+    plt.show() 
 
 # ----- Separa en ida y vuelta, cortando pixeles de mas del final -----
 
@@ -81,14 +94,10 @@ def imagen_ida_vuelta(file, n_pix, tamano_um,pixeles_ida_centro ):
         # Filtramos los píxeles (ignoramos bordes)
         _, pixeles_ida, pixeles_vuelta = rd.filtrar_pixels(pixeles[pixeles_ida_centro:len(pixeles)], n_pix, 4, 1)
         imagen_ida, imagen_vuelta = separar_ida_vuelta(
-           pixeles_ida, pixeles_vuelta, shape, n_pix_objetivo, canal=2)
+           pixeles_ida, pixeles_vuelta, shape, n_pix_objetivo, canal=1)
         return x, y, imagen_ida, imagen_vuelta  
 
-# ----- Guardamos .tiff para ImageJ -----
-def guardar_imagen_tiff(file, imagen_ida, imagen_vuelta):
-    tiff.imwrite( path + file + "_ida.tif", imagen_ida.astype(np.float32))
-    tiff.imwrite( path + file + "_vuelta.tif", np.flip(imagen_vuelta, axis = 1).astype(np.float32))
-    
+
 
 # # -----Análisis del perfil de intensidad para ver separación entre ida y vuelta -----
 # def delta_ida_vuelta(file_name, px_size, dwell_time):
@@ -143,7 +152,7 @@ if __name__ == "__main__":
     number_of_pixels = 200
     px_size  = 10/200
     image_size_um = 10
-    pixeles_ida_al_cero = 7
+    pixeles_ida_al_cero = 3
     dwell_time = 60
     x, y, imagen_ida, imagen_vuelta = imagen_ida_vuelta(file, number_of_pixels,
     image_size_um, pixeles_ida_al_cero)

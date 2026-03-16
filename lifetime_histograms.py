@@ -10,10 +10,8 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.signal import fftconvolve
 import read_PTU_pixels_2 as rd
-import Analisis_lifetime as lf
 plt.rcParams["text.usetex"] = False
 plt.rcParams["font.family"] = "serif"
-import matplotvanda as vd
 
 def filtrar_pixeles(pixeles, apd, lower_limit, upper_limit):
     pixeles_filtrados = []
@@ -96,8 +94,7 @@ for i in range(1, 3):  # APD 1 y 2
 ax.set_xlabel("Tiempo [ns]", fontsize = 14)
 ax.set_ylabel("Densidad de probabilidad", fontsize = 14)
 ax.legend()
-vd.gula_grid(ax)
-
+ax.grid()
 # plt.text(
 #     0.1, 0.95,
 #     regions[0],
@@ -118,8 +115,8 @@ with open(archivo, 'rb') as fd:
        numRecords, globRes, timeRes = rd.readHeaders(fd)
        dtime_array, truensync_array, pixeles = rd.readPT3_fast_pixels(fd, numRecords)
        datos.append(pixeles)
-pixeles, ida, vuelta = rd.filtrar_pixels(pixeles,200,4,1)
-ida = ida[0:len(ida) - 160]
+pixeles, ida, vuelta = rd.filtrar_pixeles(pixeles,200,4,1)
+ida = ida[3:len(ida) - 157]
 
 #%%
 def reconstruir_imagen_ventanas(pixeles, apd, timeRes, ventanas):
@@ -153,7 +150,7 @@ def reconstruir_imagen_ventanas(pixeles, apd, timeRes, ventanas):
     return imagenes
 ventanas = [(0,25), (25,50), (50,75), (75,100)]
 imgs = reconstruir_imagen_ventanas(
-    vuelta,
+    ida,
     apd=1,
     timeRes=timeRes,
     ventanas=ventanas
@@ -172,17 +169,19 @@ fig, axes = plt.subplots(1, 4, figsize=(18,4))
 
 for i, w in enumerate(ventanas):
     
-    im = axes[i].imshow(np.flip(imgs[i], axis=1),
+    im = axes[i].imshow(imgs[i],
                         cmap='inferno',
                         vmin=0,
                         vmax=vmax,
                         extent=extent,
                         origin='lower')
 
-    axes[i].set_title(f"{w[0]}–{w[1]} ns")
+    axes[i].set_title(f"{w[0]}–{w[1]} ns", fontsize = 16)
     
-    axes[i].set_xlabel("x (µm)")
-    axes[i].set_ylabel("y (µm)")
+    axes[i].set_xlabel("x (µm)", fontsize = 16)
+    axes[i].set_ylabel("y (µm)", fontsize = 16)
+    axes[i].tick_params(axis='both', which='major', labelsize=13)
+
     
     axes[i].set_xticks(np.arange(0, L+1, 2))
     axes[i].set_yticks(np.arange(0, L+1, 2))
@@ -264,8 +263,10 @@ plt.plot(t_model,
 plt.xlabel("Tiempo [ns]", fontsize = 16)
 plt.ylabel("Cuentas", fontsize = 16)
 plt.grid()
-plt.legend()
+plt.legend(fontsize = 13)
 plt.tight_layout()
+plt.tick_params(axis='both', which='major', labelsize=13)
+
 plt.show()
 
 print(f"Tiempo de vida: {tau_fit:.3f} ± {tau_err:.3f} ns")
@@ -324,8 +325,10 @@ plt.plot(t_model,
 plt.xlabel("Tiempo [ns]", fontsize = "16")
 plt.ylabel("Cuentas", fontsize = "16")
 plt.grid()
-plt.legend()
+plt.legend(fontsize = 13)
 plt.tight_layout()
+plt.tick_params(axis='both', which='major', labelsize=13)
+
 plt.show()
 
 print(f"Tiempo de vida: {tau_fit:.3f} ± {tau_err:.3f} ns")
