@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.signal import fftconvolve
 import read_PTU_pixels_2 as rd
-import pandas as pd
 import Analisis_lifetime as lf
 plt.rcParams["text.usetex"] = False
 plt.rcParams["font.family"] = "serif"
@@ -64,14 +63,14 @@ def leer_fotones_globales_ptu(archivo_ptu, apd_canal=1):
     return dtime_array, truensync_array, globRes, timeRes
 # Load atto647N data (lifetime global, nuevo esquema)
 path = r"C:\Users\Luis1\Downloads"
-file = "\\6"   # sin .ptu extra
+file = "\\10-otra-8"   # sin .ptu extra
 
 archivo = path + file + ".ptu"
 
 # Leer sólo fotones globales del canal 1 (APD rojo)
 dtime_array, truensync_array, globRes, timeRes = leer_fotones_globales_ptu(
     archivo_ptu=archivo,
-    apd_canal=1   # APD 1
+    apd_canal=1  # APD 1
 )
 
 # Convertir microtiempos a ns
@@ -93,7 +92,7 @@ plt.show()
 
 t_mask = (t_ns > 10) & (t_ns < 25)
 t_sel = t_ns[t_mask]
-
+#%%
 print(f"Number of photons in selected range: {len(t_sel)}")
 
 # Check if we have enough data
