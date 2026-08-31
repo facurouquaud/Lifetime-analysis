@@ -10,28 +10,33 @@ import numpy as np
 from matplotlib.widgets import RectangleSelector  
 from scipy.optimize import curve_fit
 
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import numpy as np
+
+# Construir colormap: negro -> YlOrBr (usamos los colores desde YlOrBr pero empezando en amarillo/ambar)
+
 def graficar_ida(x, y, imagen, titulo="Ida"):
     fig, ax = plt.subplots(constrained_layout=True)
-    im = ax.imshow(imagen, cmap='inferno',
+    im = ax.imshow(imagen, cmap="viridis",
                    extent=[x.min(), x.max(), y.min(), y.max()],
                    origin='lower')
-    ax.set_xlabel("x [µm]", fontsize=14)
-    ax.set_ylabel("y [µm]", fontsize=14)
-    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.set_xlabel("x [µm]", fontsize=20)
+    ax.set_ylabel("y [µm]", fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=14)
 
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("Número de fotones", fontsize=12)
-    cbar.ax.tick_params(labelsize=12)
+    cbar.ax.tick_params(labelsize=10)
 
     ax.set_aspect('equal', adjustable='box')
-    ax.set_title(titulo)
+   # ax.set_title(titulo)
     plt.show()
-
 
 def graficar_vuelta(x, y, imagen, titulo="Vuelta"):
     imagen = np.flip(imagen, axis=1)
     fig, ax = plt.subplots(constrained_layout=True)
-    im = ax.imshow(imagen, cmap='inferno',
+    im = ax.imshow(imagen, cmap='viridis',
                    extent=[x.min(), x.max(), y.min(), y.max()],
                    origin='lower')
     ax.set_xlabel("x [µm]", fontsize=14)
@@ -280,17 +285,18 @@ if __name__ == "__main__":
     print("Version 1.0.00")
 
     path = r"C:\Users\Luis1\Downloads"
-    file = "6"
+    file = "10-otra-9"
 
-    n_pix_img = 120
+    n_pix_img = 200
     n_pix_acc = 4
-    N_lineas  = 120
-    tamano_um = 6
+    N_lineas  = 200
+    tamano_um = 10
 
-    dwell_ns = 600.0 * 1e3   # ej. 50 µs = 50e3 ns
+    dwell_ns = 1200.0 * 1e3   # ej. 50 µs = 50e3 ns
 
     bin_width_ns = 0.032
-    lifetime_ns  = None      # o (5,8) si querés filtrar lifetime
+    #lifetime_ns = None
+    lifetime_ns  = (8.5,13) # o (5,8) si querés filtrar lifetime
 
     x, y, ida_stack, vuelta_stack, n_frames = imagen_ida_vuelta_desde_line_markers(
         path, file,
@@ -304,10 +310,11 @@ if __name__ == "__main__":
     )
 
     print(f"{n_frames} frames completos (líneas con markers inicio/fin)")
+    graficar_ida(x, y, ida_stack[0], titulo= "")
 
-    for f in range(min(3, n_frames)):
-        graficar_ida(x, y, ida_stack[f], titulo=f"Ida frame {f}")
-        graficar_vuelta(x, y, vuelta_stack[f], titulo=f"Vuelta frame {f}")
+    # for f in range(3,len(ida_stack),1):
+    #     graficar_ida(x, y, ida_stack[f], titulo=f"Ida frame {f}")
+    #     graficar_vuelta(x, y, vuelta_stack[f], titulo=f"Vuelta frame {f}")
 
 
  

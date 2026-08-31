@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.signal import fftconvolve
 import read_PTU_pixels_2 as rd
+import pandas as pd
+import Analisis_lifetime as lf
 plt.rcParams["text.usetex"] = False
 plt.rcParams["font.family"] = "serif"
 
@@ -35,15 +37,21 @@ def fotones_globales(pixeles, apd, lower_limit, upper_limit):
         if apd not in p:
             continue
 
-        n = p[apd].shape[0]
+        photon_data = p[apd]
+        n = photon_data.shape[0]
 
         if lower_limit <= n < upper_limit:
-            fotones.append(p[apd])
+            # Ensure the array has the correct shape even if empty
+            if photon_data.size == 0:
+                # Create empty array with correct shape (0, 2)
+                photon_data = photon_data.reshape(0, 2)
+            fotones.append(photon_data)
 
     if len(fotones) == 0:
         return np.empty((0, 2))
 
     return np.vstack(fotones)
+
 
 
 #%% Cargo todos los pixeles de las mediciones
@@ -91,8 +99,10 @@ for i in range(1, 3):  # APD 1 y 2
         label=labels[i-1]
     )
 
-ax.set_xlabel("Tiempo [ns]", fontsize = 14)
+ax.set_xlabel("Tiempo [ns]", fontsize = 16)
 ax.set_ylabel("Densidad de probabilidad", fontsize = 14)
+ax.tick_params(axis='both', which='major', labelsize=15)
+
 ax.legend()
 ax.grid()
 # plt.text(
@@ -105,8 +115,6 @@ ax.grid()
 # )
 
 plt.tight_layout()
-plt.show()
-
 
 
 #%% Reconstrucción imágenes por lifetime pixel apixel
@@ -115,8 +123,8 @@ with open(archivo, 'rb') as fd:
        numRecords, globRes, timeRes = rd.readHeaders(fd)
        dtime_array, truensync_array, pixeles = rd.readPT3_fast_pixels(fd, numRecords)
        datos.append(pixeles)
-pixeles, ida, vuelta = rd.filtrar_pixeles(pixeles,200,4,1)
-ida = ida[3:len(ida) - 157]
+pixeles, ida, vuelta = rd.filtrar_pixels(pixeles,200,4,1)
+ida = ida[0:len(ida) - 160]
 
 #%%
 def reconstruir_imagen_ventanas(pixeles, apd, timeRes, ventanas):
@@ -150,7 +158,7 @@ def reconstruir_imagen_ventanas(pixeles, apd, timeRes, ventanas):
     return imagenes
 ventanas = [(0,25), (25,50), (50,75), (75,100)]
 imgs = reconstruir_imagen_ventanas(
-    ida,
+    vuelta,
     apd=1,
     timeRes=timeRes,
     ventanas=ventanas
@@ -169,19 +177,17 @@ fig, axes = plt.subplots(1, 4, figsize=(18,4))
 
 for i, w in enumerate(ventanas):
     
-    im = axes[i].imshow(imgs[i],
+    im = axes[i].imshow(np.flip(imgs[i], axis=1),
                         cmap='inferno',
                         vmin=0,
                         vmax=vmax,
                         extent=extent,
                         origin='lower')
 
-    axes[i].set_title(f"{w[0]}–{w[1]} ns", fontsize = 16)
+    axes[i].set_title(f"{w[0]}–{w[1]} ns")
     
-    axes[i].set_xlabel("x (µm)", fontsize = 16)
-    axes[i].set_ylabel("y (µm)", fontsize = 16)
-    axes[i].tick_params(axis='both', which='major', labelsize=13)
-
+    axes[i].set_xlabel("x (µm)")
+    axes[i].set_ylabel("y (µm)")
     
     axes[i].set_xticks(np.arange(0, L+1, 2))
     axes[i].set_yticks(np.arange(0, L+1, 2))
@@ -263,10 +269,8 @@ plt.plot(t_model,
 plt.xlabel("Tiempo [ns]", fontsize = 16)
 plt.ylabel("Cuentas", fontsize = 16)
 plt.grid()
-plt.legend(fontsize = 13)
+plt.legend()
 plt.tight_layout()
-plt.tick_params(axis='both', which='major', labelsize=13)
-
 plt.show()
 
 print(f"Tiempo de vida: {tau_fit:.3f} ± {tau_err:.3f} ns")
@@ -325,10 +329,138 @@ plt.plot(t_model,
 plt.xlabel("Tiempo [ns]", fontsize = "16")
 plt.ylabel("Cuentas", fontsize = "16")
 plt.grid()
-plt.legend(fontsize = 13)
+plt.legend()
 plt.tight_layout()
-plt.tick_params(axis='both', which='major', labelsize=13)
-
 plt.show()
 
 print(f"Tiempo de vida: {tau_fit:.3f} ± {tau_err:.3f} ns")
+
+
+#%%
+
+# Load atto647N data
+path = r"C:\Users\Luis1\Downloads"
+file = "\\10-10-confocal-otro"
+#file = "\\10-otra"
+
+archivo = path + file + ".ptu"
+
+with open(archivo, 'rb') as fd:
+    numRecords, globRes, timeRes = rd.readHeaders(fd)
+    dtime_array, truensync_array, pixeles_atto = rd.readPT3_fast_pixels(fd, numRecords)
+
+# Filter pixels
+pixeles_atto_filtered, ida, vuelta = rd.filtrar_pixels(pixeles_atto, 200, 4, 1)
+pixeles_validos_atto = filtrar_pixeles(
+    vuelta[72:200-72],
+    apd=1,
+    lower_limit=5,
+    upper_limit=1200
+)
+
+# Extract global photons from atto647N data
+datos_globales_atto = fotones_globales(
+    pixeles_atto_filtered,          
+    apd=1,
+    lower_limit=5,
+    upper_limit=1000
+)
+
+# Convert to nanoseconds and plot
+T = 25.0
+t_ns = datos_globales_atto[:, 0] * timeRes * 1e9
+
+# t_ns = t_ns % T
+fig, ax = plt.subplots()
+ax.hist(t_ns, bins = 70, color="firebrick", label="640R")
+ax.set_xlabel("Tiempo [ns]", fontsize=16)
+ax.set_ylabel("Cuentas", fontsize=14)
+ax.tick_params(axis='both', which='major', labelsize=15)
+ax.legend()
+ax.grid()
+ax.set_xlim(0,25)
+plt.tight_layout()
+plt.show()
+#%%
+
+
+
+# Select time range
+t_mask = (t_ns > 9) & (t_ns < 25)
+t_sel = t_ns[t_mask]
+
+print(f"Number of photons in selected range: {len(t_sel)}")
+
+# Check if we have enough data
+if len(t_sel) < 8:  # Minimum threshold for meaningful fit
+    print("Not enough photons in the selected time range for fitting")
+else:
+    bins = 70
+    counts, edges = np.histogram(t_sel, bins=bins)
+    bin_centers = (edges[:-1] + edges[1:]) / 2
+
+    # Avoid empty bins when fitting
+    mask_fit = counts > 0
+    t_fit = bin_centers[mask_fit]
+    counts_fit = counts[mask_fit]
+    
+    print(f"Number of non-empty bins: {len(counts_fit)}")
+    
+    # Check if we have enough non-empty bins for fitting
+    if len(counts_fit) < 5:  # Need at least a few points for a meaningful fit
+        print("Not enough non-empty bins for fitting")
+    else:
+        # Define exp_decay function if not already defined
+        def exp_decay(t, A, tau, C):
+            return A * np.exp(-t / tau) + C
+        
+        # -------- fitting ----------
+        try:
+            p0 = [counts_fit.max(), 4, 10]  # initial conditions
+            
+            popt, pcov = curve_fit(
+                exp_decay,
+                t_fit,
+                counts_fit,
+                p0=p0,
+                maxfev=5000  # Increase max iterations if needed
+            )
+            
+            A_fit, tau_fit, C_fit = popt
+            tau_err = np.sqrt(np.diag(pcov))[1]
+            
+            # -------- plot ----------
+            plt.figure(figsize=(7, 5))
+            
+            plt.plot(t_fit, counts_fit, 'o', label='640R', color="firebrick")
+            
+            t_model = np.linspace(t_fit.min(), t_fit.max(), 400)
+            plt.plot(t_model,
+                     exp_decay(t_model, *popt),
+                     '-',
+                     label=f'Ajuste: τ = {tau_fit:.2f} ± {tau_err:.2f} ns',
+                     color="slategray")
+            
+            plt.xlabel("Tiempo [ns]", fontsize=16)
+            plt.ylabel("Cuentas", fontsize=16)
+            plt.grid()
+            plt.legend(fontsize  =15)
+            plt.tight_layout()
+            plt.show()
+            
+            print(f"Tiempo de vida: {tau_fit:.3f} ± {tau_err:.3f} ns")
+            
+        except Exception as e:
+            print(f"Fitting failed: {e}")
+            
+            # Plot raw data anyway to see what we have
+            plt.figure(figsize=(7, 5))
+            plt.plot(t_fit, counts_fit, 'o', label='640R', color="r")
+            plt.xlabel("Tiempo [ns]", fontsize=16)
+            plt.ylabel("Cuentas", fontsize=16)
+            plt.grid()
+            plt.legend(fontsize = 18)
+            plt.title("Raw data (fitting failed)")
+            plt.tight_layout()
+            plt.show()
+
