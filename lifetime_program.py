@@ -44,7 +44,6 @@ class PTUConfig:
 
     n_pix_img: int = 200
     n_pix_acc: int = 4
-    n_lineas: int = n_pix_img
     tamano_um: float = 10.0
     dwell_us: float = 1200
     bin_width_ns: float = 0.032
@@ -161,7 +160,7 @@ def reconstruir_imagen_ptu(
         n_pix_acc=config.n_pix_acc,
         tamano_um=config.tamano_um,
         dwell_ns=config.dwell_us*1000,
-        N_lineas=config.n_lineas,
+        N_lineas=config.n_pix_img,
         lifetime_ns=lifetime_window,
         bin_width_ns=config.bin_width_ns
     )
@@ -381,9 +380,7 @@ class LifetimeApp(QMainWindow):
 
         self.spin_nlineas = QSpinBox()
         self.spin_nlineas.setRange(4, 2048)
-        self.spin_nlineas.setValue(
-            self.config.n_lineas
-        )
+        
 
         self.spin_acc = QSpinBox()
         self.spin_acc.setRange(0, 100)
@@ -841,7 +838,6 @@ class LifetimeApp(QMainWindow):
         return PTUConfig(
             n_pix_img=self.spin_npix.value(),
             n_pix_acc=self.spin_acc.value(),
-            n_lineas=self.spin_nlineas.value(),
             tamano_um=self.spin_tamano.value(),
             dwell_us=self.spin_dwell.value(),
             bin_width_ns=self.spin_bin.value(),
